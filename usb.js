@@ -12,25 +12,29 @@ Object.keys(events.EventEmitter.prototype).forEach(function (key) {
 });
 
 // convenience method for finding a device by vendor and product id
-exports.findByIds = function(vid, pid) {
+exports.findByIds = function(vid, pid, callback) {
 	var devices = usb.getDeviceList()
 
 	for (var i = 0; i < devices.length; i++) {
 		var deviceDesc = devices[i].deviceDescriptor
 		if ((deviceDesc.idVendor == vid) && (deviceDesc.idProduct == pid)) {
-			return devices[i]
+			return callback(null, devices[i])
 		}
 	}
 }
 
 usb.Device.prototype.timeout = 1000
 
-usb.Device.prototype.open = function(){
+usb.Device.prototype.open = function(callback){
 	this.__open()
+	this.__claimInterface(0); // https://github.com/nonolith/node-usb/issues/61
 	this.interfaces = []
 	var len = this.configDescriptor.interfaces.length
 	for (var i=0; i<len; i++){
 		this.interfaces[i] = new Interface(this, i)
+		if(i===len-1){ //hack
+			return callback()
+		}
 	}
 }
 
